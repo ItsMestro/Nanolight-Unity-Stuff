@@ -1,0 +1,54 @@
+name: Publish release
+
+on:
+  workflow_run:
+    workflows: [Update Version File]
+    types: [completed]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Get release version
+      id: version
+      run: |
+        echo "::set-output name=version::$(cat 'Nanolight Assets/VERSION')"
+    
+    - name: Create meta file list
+      run: |
+        echo "Nanolight Assets.meta" > metaList
+        find 'Nanolight Assets/' -iname \*.meta >> metaList
+        
+    - name: Make package
+      run: mkdir a
+
+    - uses: pCYSl5EDgo/create-unitypackage@master
+      with:
+        package-path: 'a/Nanolight Assets ${{ steps.version.outputs.version }}.unitypackage'
+        include-files: metaList
+        
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.version.outputs.version }}
+        release_name: Nanolight Assets ${{ steps.version.outputs.version }}
+        draft: false
+        prerelease: false
+        
+    - name: Upload release asset
+      id: upload-release-asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: 'a/Nanolight Assets ${{ steps.version.outputs.version }}.unitypackage'
+        asset_name: 'Nanolight_Assets_${{ steps.version.outputs.version }}.unitypackage'
+        asset_content_type: application/zip

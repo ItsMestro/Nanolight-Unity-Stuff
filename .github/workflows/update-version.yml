@@ -1,0 +1,22 @@
+name: Update Version File
+
+on:
+  workflow_dispatch:
+    inputs:
+      new_stable_version:
+        description: Updated version number for release
+
+jobs:
+  bump_version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+          sed -i 'c\${{ github.event.inputs.new_stable_version }}' 'Nanolight Assets/VERSION'
+          
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          
+          git add 'Nanolight Assets/VERSION'
+          git commit -m 'Version update to ${{ github.event.inputs.new_stable_version }}'
+          git push
